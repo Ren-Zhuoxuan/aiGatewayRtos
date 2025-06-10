@@ -12,7 +12,7 @@
 #include <linux/videodev2.h>
 
 #define USB_CAMERA_PATH "/dev/video0"
-
+#define OUTPUT_PICTURE  "output/frame.jpg"
 
 int capture_frame(const char* device,const char* output);
 
