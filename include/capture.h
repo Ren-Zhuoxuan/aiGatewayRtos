@@ -10,9 +10,10 @@
 #include <errno.h>
 #include <jpeglib.h>
 #include <linux/videodev2.h>
+#include <sys/mman.h>  // for mmap
 
 #define USB_CAMERA_PATH "/dev/video0"
-#define OUTPUT_PICTURE  "output/frame.jpg"
+#define OUTPUT_PICTURE  "output/frame.yuv"
 
 int capture_frame(const char* device,const char* output);
 
