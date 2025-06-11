@@ -8,7 +8,15 @@
 开发板需要安装:
 
 ```
-sudo apt install build-essential v4l-utils libjpeg-dev
+sudo apt install build-essential v4l-utils libjpeg-dev ffmpeg
+```
+
+
+
+使用下面命令查看图片
+
+```
+ffplay -f rawvideo -pixel_format yuyv422 -video_size 640x360 output/frame.yuv
 ```
 
 
