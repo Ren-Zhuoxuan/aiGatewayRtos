@@ -3,12 +3,14 @@
 
 
 
+# 安装环境
+
 开发板基于RK3568,系统目前是debian11
 
 开发板需要安装:
 
 ```
-sudo apt install build-essential v4l-utils libjpeg-dev ffmpeg
+sudo apt install gedit gnome-terminal build-essential v4l-utils libjpeg-dev ffmpeg -y
 ```
 
 
@@ -16,10 +18,17 @@ sudo apt install build-essential v4l-utils libjpeg-dev ffmpeg
 使用下面命令查看图片
 
 ```
+打开yuv
 ffplay -f rawvideo -pixel_format yuyv422 -video_size 640x360 output/frame.yuv
+打开rgb
+ffplay -f rawvideo -pixel_format rgb24 -video_size 640x360 frame.rgb
 ```
 
 
+
+
+
+# 项目结构
 
 main.c: 程序入口
 include/: 函数声明头文件

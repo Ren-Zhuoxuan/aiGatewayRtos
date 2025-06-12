@@ -203,3 +203,113 @@ int capture_frame(const char* device,const char* output)
     close(fd);
     return 0;
 }
+
+
+
+/**
+ * 将YUYV格式转换为RGB格式（为RKNN准备）
+ * @param yuv_file 输入的YUV文件路径
+ * @param rgb_file 输出的RGB文件路径  
+ * @param width 图像宽度
+ * @param height 图像高度
+ * @return 成功返回0，失败返回-1
+ */
+int convert_yuv_to_rgb(const char* yuv_file, const char* rgb_file, 
+                       int width, int height)
+{
+    FILE *yuv_fp, *rgb_fp;
+    unsigned char *yuv_data, *rgb_data;
+    int yuv_size, rgb_size;
+    
+    printf("Stage2:YUV to RGB convert ===\n");
+    printf("Input: %s (%dx%d YUYV)\n", yuv_file, width, height);
+    printf("Output: %s (%dx%d RGB)\n", rgb_file, width, height);
+    
+    // 计算数据大小
+    yuv_size = width * height * 2;  // YUYV每像素2字节
+    rgb_size = width * height * 3;  // RGB每像素3字节
+    
+    // 分配内存
+    yuv_data = (unsigned char*)malloc(yuv_size);
+    rgb_data = (unsigned char*)malloc(rgb_size);
+    
+    if (!yuv_data || !rgb_data) {
+        printf("Error: Memory allocation failed\n");
+        if (yuv_data) free(yuv_data);
+        if (rgb_data) free(rgb_data);
+        return -1;
+    }
+    
+    // 读取YUV文件
+    yuv_fp = fopen(yuv_file, "rb");
+    if (!yuv_fp) {
+        printf("Error: Failed to open YUV file %s\n", yuv_file);
+        free(yuv_data);
+        free(rgb_data);
+        return -1;
+    }
+    
+    int bytes_read = fread(yuv_data, 1, yuv_size, yuv_fp);
+    fclose(yuv_fp);
+    
+    if (bytes_read != yuv_size) {
+        printf("Warning: Read byte count %d not equal to expected %d\n", bytes_read, yuv_size);
+    }
+    
+    // YUYV到RGB转换
+    printf("Start convert YUYV → RGB...\n");
+    
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j += 2) {
+            // YUYV格式：Y0 U0 Y1 V0（4字节表示2个像素）
+            int yuv_index = (i * width + j) * 2;
+            int rgb_index1 = (i * width + j) * 3;      // 第一个像素
+            int rgb_index2 = (i * width + j + 1) * 3;  // 第二个像素
+            
+            unsigned char y1 = yuv_data[yuv_index];
+            unsigned char u  = yuv_data[yuv_index + 1];
+            unsigned char y2 = yuv_data[yuv_index + 2];
+            unsigned char v  = yuv_data[yuv_index + 3];
+            
+            // YUV到RGB转换公式
+            int r1 = y1 + 1.402 * (v - 128);
+            int g1 = y1 - 0.344 * (u - 128) - 0.714 * (v - 128);
+            int b1 = y1 + 1.772 * (u - 128);
+            
+            int r2 = y2 + 1.402 * (v - 128);
+            int g2 = y2 - 0.344 * (u - 128) - 0.714 * (v - 128);
+            int b2 = y2 + 1.772 * (u - 128);
+            
+            // 限制RGB值范围 [0, 255]
+            rgb_data[rgb_index1]     = (r1 > 255) ? 255 : (r1 < 0) ? 0 : r1;
+            rgb_data[rgb_index1 + 1] = (g1 > 255) ? 255 : (g1 < 0) ? 0 : g1;
+            rgb_data[rgb_index1 + 2] = (b1 > 255) ? 255 : (b1 < 0) ? 0 : b1;
+            
+            rgb_data[rgb_index2]     = (r2 > 255) ? 255 : (r2 < 0) ? 0 : r2;
+            rgb_data[rgb_index2 + 1] = (g2 > 255) ? 255 : (g2 < 0) ? 0 : g2;
+            rgb_data[rgb_index2 + 2] = (b2 > 255) ? 255 : (b2 < 0) ? 0 : b2;
+        }
+    }
+    
+    // 保存RGB文件
+    rgb_fp = fopen(rgb_file, "wb");
+    if (!rgb_fp) {
+        printf("Error: Failed to create RGB file %s\n", rgb_file);
+        free(yuv_data);
+        free(rgb_data);
+        return -1;
+    }
+    
+    fwrite(rgb_data, 1, rgb_size, rgb_fp);
+    fclose(rgb_fp);
+    
+    printf("✅ Convert completed!\n");
+    printf("RGB file size: %d bytes\n", rgb_size);
+    printf("RKNN usable RGB data saved to: %s\n", rgb_file);
+    
+    // 清理内存
+    free(yuv_data);
+    free(rgb_data);
+    
+    return 0;
+}
